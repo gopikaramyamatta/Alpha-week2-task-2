@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Analytics Dashboard | JobPortal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js for professional charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+            overflow-x: hidden;
+        }
+
+        /* Dashboard Layout */
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .sidebar-nav {
+            padding: 1.5rem 0;
+        }
+
+        .nav-item {
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border-left-color: #3b82f6;
+        }
+
+        .nav-item i {
+            width: 24px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 1rem 1.5rem 2rem;
+        }
+
+        /* Top Navbar */
+        .top-navbar {
+            background: white;
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .profile-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-info h3 {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: #eef2ff;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: #3b82f6;
+        }
+
+        /* Charts Row */
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .chart-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            color: #334155;
+        }
+
+        canvas {
+            max-height: 280px;
+            width: 100%;
+        }
+
+        /* Data Table Section */
+        .data-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            background: #f8fafc;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            padding: 0.4rem;
+            outline: none;
+            width: 200px;
+        }
+
+        .filter-select {
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            border: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .delete-btn {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .delete-btn:hover {
+            background: #fecaca;
+        }
+
+        .badge {
+            background: #dbeafe;
+            color: #2563eb;
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                left: -260px;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: #0f172a;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-chart-line"></i> JobPortal</h2>
+            <p style="font-size: 0.75rem; opacity: 0.7;">Admin Analytics</p>
+        </div>
+        <div class="sidebar-nav">
+            <div class="nav-item active" data-tab="dashboard">
+                <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+            </div>
+            <div class="nav-item" data-tab="jobs-table">
+                <i class="fas fa-briefcase"></i> <span>Jobs Management</span>
+            </div>
+            <div class="nav-item" data-tab="applicants-table">
+                <i class="fas fa-users"></i> <span>Applicants</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="top-navbar">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h1 class="page-title" id="pageTitle">Analytics Dashboard</h1>
+            </div>
+            <div class="profile-area">
+                <span><i class="fas fa-user-shield"></i> Admin</span>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab Content -->
+        <div id="dashboardTab">
+            <!-- Stats Cards -->
+            <div class="stats-grid" id="statsGrid"></div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-bar"></i> Applications per Job</h3>
+                    <canvas id="applicationsChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-pie"></i> Jobs by Category (Type)</h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Quick Overview Tables -->
+            <div class="data-section">
+                <h3 style="margin-bottom: 1rem;">📋 Recent Jobs Overview</h3>
+                <div style="overflow-x: auto;">
+                    <table id="recentJobsTable">
+                        <thead>
+                            <tr><th>Job Title</th><th>Company</th><th>Type</th><th>Applications</th><th>Status</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Management Tab -->
+        <div id="jobsTab" style="display: none;">
+            <div class="data-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-briefcase"></i> All Jobs</h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="jobSearchInput" placeholder="Search by title...">
+                        </div>
+                        <select id="jobTypeFilter" class="filter-select">
+                            <option value="">All Types</option>
+                            <option value="Full-time">Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Remote">Remote</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="allJobsTable">
+                        <thead>
+                            <tr><th>ID</th><th>Job Title</th><th>Company</th><th>Location</th><th>Type</th><th>Salary</th><th>Applications</th><th>Action</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Applicants Tab -->
+        <div id="applicantsTab" style="display: none;">
+            <div class="data-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-users"></i> All Job Applicants</h3>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="applicantSearchInput" placeholder="Search by name or job...">
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="applicantsTable">
+                        <thead>
+                            <tr><th>Candidate Name</th><th>Email</th><th>Job Title</th><th>Applied Date</th><th>Action</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Data keys same as Job Portal
+    let jobs = JSON.parse(localStorage.getItem('jobs')) || [];
+    let applications = JSON.parse(localStorage.getItem('applications')) || [];
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+
+    // Chart instances
+    let appChart, categoryChart;
+
+    // Initialize demo data if missing
+    function initMockData() {
+        if (jobs.length === 0) {
+            jobs = [
+                { id: 1, title: "Frontend Developer", company: "TechCorp", location: "Remote", type: "Full-time", salary: "₹8-12 LPA", description: "React expert", employerId: 1 },
+                { id: 2, title: "Backend Engineer", company: "DataFlow", location: "Bangalore", type: "Full-time", salary: "₹10-15 LPA", description: "Node.js", employerId: 1 },
+                { id: 3, title: "UI/UX Designer", company: "CreativeStudio", location: "Hyderabad", type: "Contract", salary: "₹6-9 LPA", description: "Figma", employerId: 1 },
+                { id: 4, title: "DevOps Engineer", company: "CloudNex", location: "Mumbai", type: "Full-time", salary: "₹12-18 LPA", description: "AWS/K8s", employerId: 2 },
+                { id: 5, title: "Data Analyst", company: "InsightAI", location: "Pune", type: "Part-time", salary: "₹5-7 LPA", description: "SQL/Python", employerId: 2 }
+            ];
+            localStorage.setItem('jobs', JSON.stringify(jobs));
+        }
+        if (applications.length === 0) {
+            applications = [
+                { id: 101, jobId: 1, candidateId: 101, candidateName: "Rahul Sharma", candidateEmail: "rahul@example.com", appliedAt: "2025-05-01T10:00:00Z" },
+                { id: 102, jobId: 1, candidateId: 102, candidateName: "Priya Mehta", candidateEmail: "priya@example.com", appliedAt: "2025-05-02T12:00:00Z" },
+                { id: 103, jobId: 2, candidateId: 103, candidateName: "Amit Kumar", candidateEmail: "amit@example.com", appliedAt: "2025-05-03T09:00:00Z" },
+                { id: 104, jobId: 3, candidateId: 104, candidateName: "Neha Verma", candidateEmail: "neha@example.com", appliedAt: "2025-05-04T14:00:00Z" }
+            ];
+            localStorage.setItem('applications', JSON.stringify(applications));
+        }
+        if (users.length === 0) {
+            users = [{ id: 1, name: "Admin", email: "admin@jobportal.com", role: "admin" }];
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+    }
+    initMockData();
+
+    // Helper functions
+    function getApplicationsPerJob() {
+        const map = new Map();
+        jobs.forEach(job => map.set(job.id, { title: job.title, count: 0 }));
+        applications.forEach(app => {
+            if (map.has(app.jobId)) map.get(app.jobId).count++;
+        });
+        return map;
+    }
+
+    function getJobsByType() {
+        const typeMap = new Map();
+        jobs.forEach(job => {
+            typeMap.set(job.type, (typeMap.get(job.type) || 0) + 1);
+        });
+        return typeMap;
+    }
+
+    function getJobApplicationsCount(jobId) {
+        return applications.filter(app => app.jobId === jobId).length;
+    }
+
+    function renderStats() {
+        const totalJobs = jobs.length;
+        const totalApplications = applications.length;
+        const totalUsers = users.filter(u => u.role !== 'admin' || !u.role).length + 5; // mock users
+        const activeJobs = jobs.filter(j => true).length;
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-card"><div class="stat-info"><h3>Total Jobs</h3><div class="stat-number">${totalJobs}</div></div><div class="stat-icon"><i class="fas fa-briefcase"></i></div></div>
+            <div class="stat-card"><div class="stat-info"><h3>Total Applications</h3><div class="stat-number">${totalApplications}</div></div><div class="stat-icon"><i class="fas fa-paper-plane"></i></div></div>
+            <div class="stat-card"><div class="stat-info"><h3>Total Users</h3><div class="stat-number">${totalUsers}</div></div><div class="stat-icon"><i class="fas fa-users"></i></div></div>
+            <div class="stat-card"><div class="stat-info"><h3>Active Jobs</h3><div class="stat-number">${activeJobs}</div></div><div class="stat-icon"><i class="fas fa-check-circle"></i></div></div>
+        `;
+    }
+
+    function renderCharts() {
+        const appPerJob = getApplicationsPerJob();
+        const jobTitles = Array.from(appPerJob.keys()).map(id => {
+            const job = jobs.find(j => j.id === id);
+            return job ? job.title.substring(0, 15) : `Job ${id}`;
+        });
+        const counts = Array.from(appPerJob.values()).map(v => v.count);
+
+        if (appChart) appChart.destroy();
+        const ctx1 = document.getElementById('applicationsChart').getContext('2d');
+        appChart = new Chart(ctx1, {
+            type: 'bar',
+            data: { labels: jobTitles, datasets: [{ label: 'Applications', data: counts, backgroundColor: '#3b82f6', borderRadius: 6 }] },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } }
+        });
+
+        const typeMap = getJobsByType();
+        const typeLabels = Array.from(typeMap.keys());
+        const typeCounts = Array.from(typeMap.values());
+        if (categoryChart) categoryChart.destroy();
+        const ctx2 = document.getElementById('categoryChart').getContext('2d');
+        categoryChart = new Chart(ctx2, {
+            type: 'pie',
+            data: { labels: typeLabels, datasets: [{ data: typeCounts, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'] }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function renderRecentJobs() {
+        const tbody = document.querySelector('#recentJobsTable tbody');
+        if (!tbody) return;
+        const recent = jobs.slice(0, 5);
+        tbody.innerHTML = recent.map(job => `
+            <tr>
+                <td>${escapeHtml(job.title)}</td><td>${escapeHtml(job.company)}</td><td><span class="badge">${job.type}</span></td>
+                <td>${getJobApplicationsCount(job.id)}</td><td><span style="color:#10b981;">● Active</span></td>
+            </tr>
+        `).join('');
+    }
+
+    function renderAllJobsTable() {
+        let filteredJobs = [...jobs];
+        const searchTerm = document.getElementById('jobSearchInput')?.value.toLowerCase() || '';
+        const typeFilter = document.getElementById('jobTypeFilter')?.value || '';
+        if (searchTerm) filteredJobs = filteredJobs.filter(j => j.title.toLowerCase().includes(searchTerm));
+        if (typeFilter) filteredJobs = filteredJobs.filter(j => j.type === typeFilter);
+        
+        const tbody = document.querySelector('#allJobsTable tbody');
+        if (tbody) {
+            tbody.innerHTML = filteredJobs.map(job => `
+                <tr>
+                    <td>${job.id}</td><td>${escapeHtml(job.title)}</td><td>${escapeHtml(job.company)}</td>
+                    <td>${escapeHtml(job.location)}</td><td>${job.type}</td><td>${job.salary || 'N/A'}</td>
+                    <td>${getJobApplicationsCount(job.id)}</td>
+                    <td><button class="delete-btn" onclick="deleteJobItem(${job.id})"><i class="fas fa-trash"></i> Delete</button></td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    function renderApplicantsTable() {
+        let filtered = [...applications];
+        const searchTerm = document.getElementById('applicantSearchInput')?.value.toLowerCase() || '';
+        if (searchTerm) {
+            filtered = filtered.filter(app => 
+                app.candidateName.toLowerCase().includes(searchTerm) || 
+                (jobs.find(j => j.id === app.jobId)?.title.toLowerCase().includes(searchTerm))
+            );
+        }
+        const tbody = document.querySelector('#applicantsTable tbody');
+        if (tbody) {
+            tbody.innerHTML = filtered.map(app => {
+                const job = jobs.find(j => j.id === app.jobId);
+                return `
+                    <tr>
+                        <td>${escapeHtml(app.candidateName)}</td><td>${escapeHtml(app.candidateEmail)}</td>
+                        <td>${job ? escapeHtml(job.title) : 'Deleted Job'}</td>
+                        <td>${new Date(app.appliedAt).toLocaleDateString()}</td>
+                        <td><button class="delete-btn" onclick="deleteApplication(${app.id})"><i class="fas fa-trash"></i> Remove</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+
+    window.deleteJobItem = function(jobId) {
+        if (confirm('Delete this job? All related applications will be removed.')) {
+            jobs = jobs.filter(j => j.id !== jobId);
+            applications = applications.filter(app => app.jobId !== jobId);
+            localStorage.setItem('jobs', JSON.stringify(jobs));
+            localStorage.setItem('applications', JSON.stringify(applications));
+            refreshAllData();
+            showToast('Job deleted successfully');
+        }
+    }
+
+    window.deleteApplication = function(appId) {
+        if (confirm('Remove this application?')) {
+            applications = applications.filter(app => app.id !== appId);
+            localStorage.setItem('applications', JSON.stringify(applications));
+            refreshAllData();
+            showToast('Application removed');
+        }
+    }
+
+    function refreshAllData() {
+        jobs = JSON.parse(localStorage.getItem('jobs')) || [];
+        applications = JSON.parse(localStorage.getItem('applications')) || [];
+        renderStats();
+        renderCharts();
+        renderRecentJobs();
+        renderAllJobsTable();
+        renderApplicantsTable();
+    }
+
+    function showToast(msg) {
+        let toast = document.getElementById('dynamicToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'dynamicToast';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.background = '#0f172a';
+            toast.style.color = 'white';
+            toast.style.padding = '10px 20px';
+            toast.style.borderRadius = '8px';
+            toast.style.zIndex = '1000';
+            document.body.appendChild(toast);
+        }
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 2500);
+    }
+
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    // Tab Switching Logic
+    const tabs = document.querySelectorAll('.nav-item');
+    function switchTab(tabId) {
+        document.getElementById('dashboardTab').style.display = tabId === 'dashboard' ? 'block' : 'none';
+        document.getElementById('jobsTab').style.display = tabId === 'jobs-table' ? 'block' : 'none';
+        document.getElementById('applicantsTab').style.display = tabId === 'applicants-table' ? 'block' : 'none';
+        const titles = { dashboard: 'Analytics Dashboard', 'jobs-table': 'Jobs Management', 'applicants-table': 'Applicants List' };
+        document.getElementById('pageTitle').innerText = titles[tabId] || 'Dashboard';
+        tabs.forEach(t => t.classList.remove('active'));
+        document.querySelector(`.nav-item[data-tab="${tabId}"]`).classList.add('active');
+        if (tabId === 'jobs-table') renderAllJobsTable();
+        if (tabId === 'applicants-table') renderApplicantsTable();
+        if (tabId === 'dashboard') { renderStats(); renderCharts(); renderRecentJobs(); }
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabVal = tab.getAttribute('data-tab');
+            switchTab(tabVal);
+        });
+    });
+
+    // Event Listeners for search/filter
+    if (document.getElementById('jobSearchInput')) {
+        document.getElementById('jobSearchInput').addEventListener('input', () => renderAllJobsTable());
+        document.getElementById('jobTypeFilter').addEventListener('change', () => renderAllJobsTable());
+        document.getElementById('applicantSearchInput').addEventListener('input', () => renderApplicantsTable());
+    }
+
+    function logout() {
+        sessionStorage.removeItem('currentUser');
+        window.location.href = 'about:blank';
+        alert('Logged out. In full app, redirect to login page.');
+        location.reload();
+    }
+
+    window.toggleSidebar = function() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar.style.left === '-260px' || !sidebar.style.left) {
+            sidebar.style.left = '0';
+        } else {
+            sidebar.style.left = '-260px';
+        }
+    }
+
+    // Initial Render
+    renderStats();
+    renderCharts();
+    renderRecentJobs();
+    renderAllJobsTable();
+    renderApplicantsTable();
+    switchTab('dashboard');
+</script>
+</body>
+</html>
